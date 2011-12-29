@@ -20,7 +20,7 @@
     (findf has-direction? (rest (assoc location edges))))
   (if next
       (begin (set! location (first next))
-             (look location))
+             (look))
       '(You can't go that direction)))
 
 (define object-locations '((whiskey living-room)
@@ -57,7 +57,37 @@
 (define (describe-paths location edges)
   (append-map describe-path (rest (assoc location edges))))
 
-(define (look loc)
+(define (look/location loc)
   (append (describe-location loc nodes)
           (describe-paths loc edges)
           (describe-objects loc objects object-locations)))
+
+(define (look)
+  (look/location location))
+
+(define (game-read)
+  (define command
+    (read (open-input-string 
+           (string-append "(" (read-line) ")"))))
+  (define (quote-it x)
+    (list 'quote x))
+  (cons (first command) (map quote-it (rest command))))
+
+(define (game-eval command)
+  (define commands '(look walk pickup inventory))
+  (if (member (first command) commands)
+      (eval command)
+      '(I don't know that command)))
+
+(define (game-print stuff)
+  (define (my-display thing)
+    (display thing)
+    (display " "))
+  (map my-display stuff)
+  (newline))
+
+(define (game-repl)
+  (define command (game-read))
+  (unless (eq? (first command) 'quit)
+    (game-print (game-eval command))
+    (game-repl)))
