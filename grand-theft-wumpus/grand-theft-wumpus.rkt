@@ -1,5 +1,6 @@
 #lang racket
-(require tests/eli-tester)
+(require "../graph-utils/graph-utils.rkt"
+         tests/eli-tester)
 
 (define nodes empty)
 (define edges empty)
@@ -10,4 +11,17 @@
 (define cop-prob 15)
 
 (define (make-edge node1 node2)
-  (list (cons node1 node2) (cons node2 node1)))
+  (if (eq? node1 node2)
+      empty
+      (list (cons node1 node2) (cons node2 node1))))
+(test
+ (make-edge 'a 'b) => '((a . b) (b . a))
+ (make-edge 'a 'a) => empty)
+
+(define (random-node)
+  (add1 (random node-num)))
+
+(define (make-edge-list)
+  (apply append
+         (for/list ([_ (in-range edge-num)])
+           (make-edge (random-node) (random-node)))))

@@ -2,6 +2,8 @@
 (require tests/eli-tester
          racket/system)
 
+(provide graph->png ugraph->png)
+
 (define (dot-name exp)
   (regexp-replace* #px"[^[:word:]]" exp "_"))
 (test
