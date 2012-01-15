@@ -51,10 +51,10 @@
 (define (find-islands nodes edges)
   (let loop ([islands empty]
              [unconnected nodes])
-      (cond 
-        [(empty? unconnected) (reverse islands)]
-        [else (define connected (get-connected (first unconnected) edges))
-              (loop (cons connected islands) (remove* connected unconnected))])))
+    (cond 
+      [(empty? unconnected) (reverse islands)]
+      [else (define connected (get-connected (first unconnected) edges))
+            (loop (cons connected islands) (remove* connected unconnected))])))
 (test
  (find-islands '(1 2) '()) => '((1) (2))
  (find-islands '(1 2) '((1 . 2) (2 . 1))) => '((1 2))
@@ -69,7 +69,7 @@
   (if (empty? (rest islands))
       empty
       (append (edge-pair (last (first islands)) (first (first (rest islands))))
-            (connect-with-bridges (rest islands)))))
+              (connect-with-bridges (rest islands)))))
 (test 
  (connect-with-bridges '((1 2 3 4))) => '()
  (connect-with-bridges '((1 2) (3 4) (5 6)))
@@ -82,3 +82,41 @@
  (connect-all-islands '(1 2 3 4 5 6)
                       '((1 . 2) (2 . 1) (3 . 4) (4 . 3) (5 . 6) (6 . 5)))
  => '((1 . 2) (2 . 1) (3 . 4) (4 . 3) (5 . 6) (6 . 5) (2 . 3) (3 . 2) (4 . 5) (5 . 4)))
+
+(define (make-city-edges)
+  (define nodes (sequence->list (in-range 1 (add1 node-num))))
+  (define edges (connect-all-islands nodes (make-edge-list)))
+  (define cops (filter (lambda (edge)
+                         (and (< (car edge) (cdr edge))
+                              (zero? (random cop-prob))))
+                       edges))
+  (add-cops (edges-to-alist nodes edges) cops))
+
+(define (edges-to-alist nodes edges)
+  (map (lambda (node)
+         (cons node (map list (nodes-from node edges))))
+       nodes))
+(test
+ (edges-to-alist '(1 2 3) '((1 . 2) (2 . 1) (2 . 3) (3 . 2)))
+ => '((1 (2)) (2 (1) (3)) (3 (2))))
+
+(define (add-cops edge-alist cop-edges)
+  (map (lambda (x)
+         (define node1 (first x))
+         (define node1-edges (rest x))
+         (cons node1 (map (lambda (edge)
+                            (define node2 (first edge))
+                            (define pair (edge-pair node1 node2))
+                            (if (or (member (first pair) cop-edges)
+                                    (member (second pair) cop-edges))
+                                (list node2 'cops)
+                                edge))
+                          node1-edges)))
+       edge-alist))
+(test
+ (add-cops '((1 (2)) (2 (1) (3)) (3 (2))) '((2 . 3)))
+ => '((1 (2)) (2 (1) (3 cops)) (3 (2 cops)))
+ (add-cops '((1 (2)) (2 (1) (3)) (3 (2))) '((3 . 2)))
+ => '((1 (2)) (2 (1) (3 cops)) (3 (2 cops)))
+ (add-cops '((1 (2)) (2 (1) (3)) (3 (2))) '((2 . 1) (2 . 3) (1 . 2)))
+ => '((1 (2 cops)) (2 (1 cops) (3 cops)) (3 (2 cops))))
