@@ -5,13 +5,17 @@
 (provide graph->png ugraph->png)
 
 (define (dot-name exp)
-  (regexp-replace* #px"[^[:word:]]" exp "_"))
+  (define str (with-output-to-string
+               (lambda ()
+                 (display exp))))
+  (regexp-replace* #px"[^[:word:]]" str "_"))
 (test
  (dot-name "") => ""
  (dot-name "hi_there") => "hi_there"
  (dot-name "hi there") => "hi_there"
  (dot-name "any one-here? I=don't_think)so:")
- => "any_one_here__I_don_t_think_so_")
+ => "any_one_here__I_don_t_think_so_"
+ (dot-name 1) => "1")
 
 ; dot-label : list -> string
 (define (dot-label exp)
@@ -33,7 +37,7 @@
 (define (nodes->dot nodes)
   (for-each (lambda (node)
               (newline)
-              (display (dot-name (symbol->string (first node))))
+              (display (dot-name (first node)))
               (display "[label=\"")
               (display (dot-label node))
               (display "\"];"))
@@ -43,9 +47,9 @@
   (for-each (lambda (node)
               (for-each (lambda (edge)
                           (newline)
-                          (display (dot-name (symbol->string (first node))))
+                          (display (dot-name (first node)))
                           (display "->")
-                          (display (dot-name (symbol->string (first edge))))
+                          (display (dot-name (first edge)))
                           (display "[label=\"")
                           (display (dot-label (rest edge)))
                           (display "\"];"))
@@ -59,9 +63,10 @@
   (display "}"))
 
 (define (dot->png filename thunk)
-  (with-output-to-file filename thunk #:exists 'replace)
+  (define dot-name (string-append filename ".dot"))
+  (with-output-to-file dot-name thunk #:exists 'replace)
   (putenv "PATH" (string-append (getenv "PATH") ":/usr/local/bin"))
-  (system (string-append "dot -Tpng -O " filename)))
+  (system (string-append "dot -Tpng -O " dot-name)))
 
 (define (graph->png filename nodes edges)
   (dot->png filename
@@ -75,9 +80,9 @@
       (for-each (lambda (edge)
                   (unless (assoc (first edge) remaining)
                     (newline)
-                    (display (dot-name (symbol->string (first node))))
+                    (display (dot-name (first node)))
                     (display "--")
-                    (display (dot-name (symbol->string (first edge))))
+                    (display (dot-name (first edge)))
                     (display "[label=\"")
                     (display (dot-label (rest edge)))
                     (display "\"];")))
